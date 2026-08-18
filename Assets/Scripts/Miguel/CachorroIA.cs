@@ -1,41 +1,76 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 public class CachorroIA : MonoBehaviour
 {
-    [Header("Player")]
     public Transform player;
-
-    [Header("Patrulha")]
     public Transform[] pontosPatrulha;
-    public float distanciaPonto = 1f;
 
-    [Header("Visão")]
     public float distanciaVisao = 12f;
     public float anguloVisao = 100f;
-    public LayerMask obstaculos;
-
-    [Header("Perseguição")]
     public float distanciaPerda = 18f;
+    public float distanciaPonto = 1f;
+
+    public float distanciaAtaque = 2f;
 
     private NavMeshAgent agent;
-    private int pontoAtual = 0;
-    private bool perseguindo = false;
+    private int pontoAtual;
+    private bool perseguindo;
+    private bool carregandoJumpscare;
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
 
-        if (pontosPatrulha.Length > 0)
+        if (agent == null)
         {
-            agent.SetDestination(pontosPatrulha[0].position);
+            Debug.LogError("ERRO: O cachorro não possui NavMeshAgent!");
+            return;
+        }
+
+        if (!agent.isOnNavMesh)
+        {
+            Debug.LogError("ERRO: O cachorro não está sobre o NavMesh!");
+            return;
+        }
+
+        if (player == null)
+        {
+            Debug.LogError("ERRO: O campo Player do cachorro está vazio!");
+            return;
+        }
+
+        if (pontosPatrulha != null && pontosPatrulha.Length > 0)
+        {
+            pontoAtual = 0;
+            agent.SetDestination(pontosPatrulha[pontoAtual].position);
+        }
+        else
+        {
+            Debug.LogWarning("AVISO: O cachorro não possui pontos de patrulha.");
         }
     }
 
     void Update()
     {
+        if (carregandoJumpscare)
+            return;
+
         if (player == null)
             return;
+
+        float distancia = Vector3.Distance(
+            transform.position,
+            player.position
+        );
+
+        if (distancia <= distanciaAtaque)
+        {
+            Debug.Log("CACHORRO CHEGOU PERTO DO GATO!");
+            CarregarJumpscare();
+            return;
+        }
 
         if (PodeVerPlayer())
         {
@@ -44,11 +79,55 @@ public class CachorroIA : MonoBehaviour
 
         if (perseguindo)
         {
-            Perseguir();
+            PerseguirPlayer();
         }
         else
         {
             Patrulhar();
+        }
+    }
+
+    void Patrulhar()
+    {
+        if (pontosPatrulha == null || pontosPatrulha.Length == 0)
+            return;
+
+        if (!agent.pathPending &&
+            agent.remainingDistance <= distanciaPonto)
+        {
+            pontoAtual++;
+
+            if (pontoAtual >= pontosPatrulha.Length)
+                pontoAtual = 0;
+
+            agent.SetDestination(
+                pontosPatrulha[pontoAtual].position
+            );
+        }
+    }
+
+    void PerseguirPlayer()
+    {
+        float distancia = Vector3.Distance(
+            transform.position,
+            player.position
+        );
+
+        if (distancia <= distanciaPerda)
+        {
+            agent.SetDestination(player.position);
+        }
+        else
+        {
+            perseguindo = false;
+
+            if (pontosPatrulha != null &&
+                pontosPatrulha.Length > 0)
+            {
+                agent.SetDestination(
+                    pontosPatrulha[pontoAtual].position
+                );
+            }
         }
     }
 
@@ -60,7 +139,10 @@ public class CachorroIA : MonoBehaviour
         if (distancia > distanciaVisao)
             return false;
 
-        float angulo = Vector3.Angle(transform.forward, direcao);
+        float angulo = Vector3.Angle(
+            transform.forward,
+            direcao
+        );
 
         if (angulo > anguloVisao / 2f)
             return false;
@@ -71,8 +153,8 @@ public class CachorroIA : MonoBehaviour
             transform.position + Vector3.up,
             direcao.normalized,
             out hit,
-            distancia,
-            ~0))
+            distancia
+        ))
         {
             if (hit.transform == player)
                 return true;
@@ -81,51 +163,42 @@ public class CachorroIA : MonoBehaviour
         return false;
     }
 
-    void Perseguir()
+    void CarregarJumpscare()
     {
-        float distancia = Vector3.Distance(transform.position, player.position);
-
-        if (distancia <= distanciaPerda)
-        {
-            agent.SetDestination(player.position);
-        }
-        else
-        {
-            perseguindo = false;
-            VoltarParaPatrulha();
-        }
-    }
-
-    void Patrulhar()
-    {
-        if (pontosPatrulha.Length == 0)
+        if (carregandoJumpscare)
             return;
 
-        if (!agent.pathPending && agent.remainingDistance <= distanciaPonto)
-        {
-            pontoAtual++;
+        carregandoJumpscare = true;
 
-            if (pontoAtual >= pontosPatrulha.Length)
-                pontoAtual = 0;
+        if (agent != null)
+            agent.isStopped = true;
 
-            agent.SetDestination(pontosPatrulha[pontoAtual].position);
-        }
-    }
+        Debug.Log("=================================");
+        Debug.Log("JUMPSCARE ATIVADO!");
+        Debug.Log("Tentando carregar: JumpScare");
+        Debug.Log("=================================");
 
-    void VoltarParaPatrulha()
-    {
-        if (pontosPatrulha.Length > 0)
-        {
-            agent.SetDestination(pontosPatrulha[pontoAtual].position);
-        }
+        SceneManager.LoadScene("JumpScare");
     }
 
     void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, distanciaVisao);
+        Gizmos.DrawWireSphere(
+            transform.position,
+            distanciaVisao
+        );
 
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, distanciaPerda);
+        Gizmos.DrawWireSphere(
+            transform.position,
+            distanciaPerda
+        );
+
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawWireSphere(
+            transform.position,
+            distanciaAtaque
+        );
     }
-}
+}   

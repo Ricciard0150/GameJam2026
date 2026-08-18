@@ -55,6 +55,22 @@
       "source": "builtin",
       "dependencies": {}
     },
+<<<<<<< Updated upstream
+=======
+    "com.unity.feature.development": {
+      "version": "1.0.2",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.ide.visualstudio": "2.0.27",
+        "com.unity.ide.rider": "3.0.38",
+        "com.unity.editorcoroutines": "1.0.1",
+        "com.unity.performance.profile-analyzer": "1.2.4",
+        "com.unity.test-framework": "1.6.0",
+        "com.unity.testtools.codecoverage": "1.2.7"
+      }
+    },
+>>>>>>> Stashed changes
     "com.unity.ide.rider": {
       "version": "3.0.38",
       "depth": 0,
@@ -175,9 +191,9 @@
       "depth": 1,
       "source": "registry",
       "dependencies": {
+        "com.unity.settings-manager": "1.0.3",
         "com.unity.mathematics": "1.2.1",
-        "com.unity.modules.imgui": "1.0.0",
-        "com.unity.settings-manager": "1.0.3"
+        "com.unity.modules.imgui": "1.0.0"
       },
       "url": "https://packages.unity.com"
     },
